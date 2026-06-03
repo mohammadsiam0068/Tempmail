@@ -34,14 +34,16 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // ইউজার যদি লগিন করা না থাকে এবং ড্যাশবোর্ডে যাওয়ার চেষ্টা করে
+  // ইউজার না থাকলে এবং ড্যাশবোর্ডে যাওয়ার চেষ্টা করলে
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    return NextResponse.redirect(url) // Vercel-এর জন্য নিরাপদ রিডাইরেক্ট
+    // URL-এর শেষে একটি এরর মেসেজ যোগ করে দিলাম চেনার জন্য
+    url.searchParams.set('error', 'middleware_kicked_me')
+    return NextResponse.redirect(url)
   }
 
-  // ইউজার যদি অলরেডি লগিন করা থাকে এবং লগিন পেজে আসার চেষ্টা করে
+  // ইউজার থাকলে এবং লগিন পেজে যাওয়ার চেষ্টা করলে
   if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
