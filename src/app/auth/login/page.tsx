@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { loginAction } from '@/app/actions' 
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -9,34 +9,22 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const router = useRouter()
 
-  // ব্রাউজার ক্লায়েন্ট তৈরি করা (এটি নিজে থেকেই কুকি সেভ করবে)
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     
     const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const result = await loginAction(formData)
     
-    // সরাসরি ব্রাউজার থেকে লগিন রিকোয়েস্ট
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    
-    if (error) {
-      setError(error.message)
+    if (result?.error) {
+      setError(result.error)
       setLoading(false)
     } else {
-      // লগিন সফল হলে Next.js-কে আপডেট করে ড্যাশবোর্ডে পাঠিয়ে দেবে
       router.refresh()
-      router.push('/dashboard')
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 800)
     }
   }
 
