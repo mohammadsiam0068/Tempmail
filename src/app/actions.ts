@@ -17,7 +17,8 @@ export async function loginAction(formData: FormData) {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        // TypeScript-এর Type Error ফিক্স করার জন্য এখানে : any[] দেওয়া হয়েছে
+        setAll(cookiesToSet: any[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set({ name, value, ...options })
@@ -36,9 +37,9 @@ export async function loginAction(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message } // ভুল পাসওয়ার্ড হলে এরর পাঠাবে
+    return { error: error.message }
   }
 
-  // লগিন সফল হলে কুকি সেভ করে ড্যাশবোর্ডে পাঠাবে
+  // লগিন সফল হলে ড্যাশবোর্ডে পাঠাবে
   redirect('/dashboard')
 }
