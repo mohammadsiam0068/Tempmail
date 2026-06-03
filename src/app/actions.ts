@@ -8,9 +8,16 @@ export async function loginAction(formData: FormData) {
   const password = formData.get('password') as string
   const cookieStore = cookies()
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    return { error: "Supabase Environment Variables are missing!" }
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
@@ -31,15 +38,18 @@ export async function loginAction(formData: FormData) {
     }
   )
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (error) {
-    return { error: error.message }
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { success: true }
+  } catch (err) {
+    return { error: "Something went wrong during login." }
   }
-
-  // সফল হলে সাকসেস মেসেজ রিটার্ন করবে, রিডাইরেক্ট ক্লায়েন্ট সাইড করবে
-  return { success: true }
 }
