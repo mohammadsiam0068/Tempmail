@@ -11,7 +11,7 @@ export async function GET(
   }
 
   const apiKey = authHeader.replace('Bearer ', '').trim()
-  const supabase = createServiceClient()
+  const supabase = await createServiceClient()
 
   // Validate API key
   const { data: keyRow } = await supabase
