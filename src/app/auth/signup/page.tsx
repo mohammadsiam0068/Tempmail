@@ -1,29 +1,6 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-
-// Make this page dynamic (don't prerender)
-export const dynamic = 'force-dynamic'
+'use client'
 
 export default function SignupPage() {
-  const handleSignup = async (formData: FormData) => {
-    'use server'
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    const supabase = createClient()
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (error) {
-      return redirect('/auth/signup?error=' + error.message)
-    }
-
-    return redirect('/auth/login?message=Check+your+email+to+confirm')
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -32,7 +9,7 @@ export default function SignupPage() {
             Create a new account
           </h2>
         </div>
-        <form className="mt-8 space-y-6" action={handleSignup}>
+        <form className="mt-8 space-y-6">
           <input
             type="email"
             name="email"
