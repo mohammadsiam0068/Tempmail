@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/auth/login')
 
   // Get or create profile with assigned email
-  const service = createServiceClient()
+  const service = await createServiceClient()
   let { data: profile } = await service
     .from('profiles')
     .select('*')
