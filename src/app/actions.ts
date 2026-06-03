@@ -2,7 +2,6 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 export async function loginAction(formData: FormData) {
   const email = formData.get('email') as string
@@ -17,14 +16,15 @@ export async function loginAction(formData: FormData) {
         getAll() {
           return cookieStore.getAll()
         },
-        // TypeScript-এর Type Error ফিক্স করার জন্য এখানে : any[] দেওয়া হয়েছে
-        setAll(cookiesToSet: any[]) {
+        // @ts-ignore
+        setAll(cookiesToSet) {
           try {
+            // @ts-ignore
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set({ name, value, ...options })
             })
           } catch (error) {
-            // Server component থেকে কল হলে এরর ইগনোর করবে
+            // Server component এর জন্য এরর ইগনোর করবে
           }
         },
       },
@@ -40,6 +40,6 @@ export async function loginAction(formData: FormData) {
     return { error: error.message }
   }
 
-  // লগিন সফল হলে ড্যাশবোর্ডে পাঠাবে
-  redirect('/dashboard')
+  // সফল হলে সাকসেস মেসেজ রিটার্ন করবে, রিডাইরেক্ট ক্লায়েন্ট সাইড করবে
+  return { success: true }
 }
