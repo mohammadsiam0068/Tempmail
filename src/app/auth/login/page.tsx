@@ -1,74 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, FormEvent } from 'react'
+// File path অনুযায়ী action import করুন। যদি actions.ts রুট app ফোল্ডারে থাকে তবে নিচেরটা ঠিক আছে।
+import { loginAction } from '@/app/actions' 
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault() // পেজ রিলোড হওয়া বন্ধ করবে
     setLoading(true)
     setError('')
-
-    console.log('🔐 Login attempt:', { email })
-
-    try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-
-      console.log('✅ Supabase client created')
-
-      // ১. লগিন রিকোয়েস্ট পাঠানো হচ্ছে
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      console.log('📡 Auth response:', { data, error: authError })
-
-      if (authError) {
-        console.error('❌ Auth error:', authError)
-        setError(authError.message || 'Login failed')
-        setLoading(false)
-        return
-      }
-
-      if (!data?.user) {
-        console.error('❌ No user data returned')
-        setError('Login failed: No user data')
-        setLoading(false)
-        return
-      }
-
-      // ২. সেশনটি ব্রাউজারের মেমোরি ও কুকিতে সেট হতে বাধ্য করা হচ্ছে
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        console.error('❌ Session not established yet')
-        setError('Session creation failed. Please try again.')
-        setLoading(false)
-        return
-      }
-
-      console.log('✅ Session confirmed, refreshing and redirecting...')
-      
-      // ৩. রাউটার রিফ্রেশ করে ১ সেকেন্ড অপেক্ষা করা হচ্ছে যাতে Middleware কুকিটি পায়
-      router.refresh()
-      
-      setTimeout(() => {
-        // window.location.replace ব্যবহার করলে ব্রাউজার জোরপূর্বক সার্ভার রিফ্রেশসহ ড্যাশবোর্ডে যাবে
-        // এতে মিডলওয়্যার কোনোভাবেই পুরানো ক্যাশ বা কুকি দেখাবে না
-        window.location.replace('/dashboard')
-      }, 1000)
-
-    } catch (err) {
-      console.error('❌ Exception during login:', err)
-      setError(err instanceof Error ? err.message : 'An error occurred')
+    
+    const formData = new FormData(e.currentTarget)
+    const result = await loginAction(formData)
+    
+    // যদি Server Action থেকে কোনো এরর আসে (যেমন: ভুল পাসওয়ার্ড)
+    if (result?.error) {
+      setError(result.error)
       setLoading(false)
     }
   }
@@ -81,40 +31,38 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleFormSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4 border border-red-200">
               <p className="text-sm font-medium text-red-800">{error}</p>
             </div>
           )}
+          
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
             <input
               id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
+          
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
             <input
               id="password"
+              name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password (min 8 characters)"
+              placeholder="••••••••"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
+          
           <button
             type="submit"
             disabled={loading}
@@ -123,12 +71,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign up
-          </a>
-        </p>
       </div>
     </div>
   )
