@@ -2,27 +2,32 @@
 
 import { useState, FormEvent } from 'react'
 import { loginAction } from '@/app/actions' 
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault() // পেজ রিলোড হওয়া বন্ধ করবে
+    e.preventDefault()
     setLoading(true)
     setError('')
     
     const formData = new FormData(e.currentTarget)
     const result = await loginAction(formData)
     
-    // যদি Server Action থেকে কোনো এরর আসে (যেমন: ভুল পাসওয়ার্ড)
     if (result?.error) {
       setError(result.error)
       setLoading(false)
-    } else {
-      // যদি কোনো এরর না আসে, তার মানে লগিন সফল এবং Server Action অলরেডি রিডাইরেক্ট করে দিয়েছে।
-      // ব্যাকআপ হিসেবে ক্লায়েন্ট সাইড থেকেও ড্যাশবোর্ডে রিডাইরেক্ট করে দিচ্ছি।
-      window.location.href = '/dashboard'
+    } else if (result?.success) {
+      // ১. প্রথমে রাউটার রিফ্রেশ করে কুকি সিঙ্ক করে নেওয়া
+      router.refresh()
+      
+      // ২. সামান্য সময় পজ দিয়ে সরাসরি ড্যাশবোর্ডে হার্ড রিডাইরেক্ট করা
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 400)
     }
   }
 
