@@ -31,10 +31,8 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // কুকি রিফ্রেশ এবং চেক করা
   const { data: { user } } = await supabase.auth.getUser()
 
-  // যদি লগিন ছাড়া কেউ ড্যাশবোর্ডে যাওয়ার চেষ্টা করে, তাকে লগিন পেজে পাঠাবে
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
