@@ -47,9 +47,14 @@ export default function LoginPage() {
 
       console.log('✅ Login successful, redirecting to dashboard...')
       
-      // window.location.href এর বদলে Next.js এর নিজস্ব router ব্যবহার করা হলো
-      router.push('/dashboard')
-      router.refresh() // সার্ভার কম্পোনেন্টগুলোকে নতুন লগিন স্টেট বোঝানোর জন্য এটি জরুরি
+      // ১. প্রথমে রাউটার রিফ্রেশ করুন যাতে ব্রাউজার সেশন কুকি আপডেট করে নেয়
+      router.refresh()
+      
+      // ২. ৫০০ মিলিসেকেন্ড (০.৫ সেকেন্ড) অপেক্ষা করে ড্যাশবোর্ডে পুশ করুন
+      // এতে মিডলওয়্যার (Middleware) সঠিকভাবে কুকি রিড করতে পারবে
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 500)
 
     } catch (err) {
       console.error('❌ Exception during login:', err)
