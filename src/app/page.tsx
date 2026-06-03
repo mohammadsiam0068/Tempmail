@@ -1,27 +1,27 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { loginAction } from './actions'
+import { loginAction } from '@/app/actions' 
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // FormEvent যুক্ত করা হয়েছে এবং e.preventDefault() দেওয়া হয়েছে
   const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault() // এটি ব্রাউজারকে পেজ রিলোড করা থেকে ১০০% আটকে দেবে!
+    e.preventDefault() // পেজ রিলোড হওয়া বন্ধ করবে
     setLoading(true)
     setError('')
     
-    // ফর্মের ডাটা ম্যানুয়ালি তৈরি করে সার্ভার অ্যাকশনে পাঠানো হচ্ছে
     const formData = new FormData(e.currentTarget)
     const result = await loginAction(formData)
     
+    // যদি Server Action থেকে কোনো এরর আসে (যেমন: ভুল পাসওয়ার্ড)
     if (result?.error) {
       setError(result.error)
       setLoading(false)
-    } else if (result?.success) {
-      // লগিন সফল হলে ব্রাউজারকে ড্যাশবোর্ডে পাঠানো হবে
+    } else {
+      // যদি কোনো এরর না আসে, তার মানে লগিন সফল এবং Server Action অলরেডি রিডাইরেক্ট করে দিয়েছে।
+      // ব্যাকআপ হিসেবে ক্লায়েন্ট সাইড থেকেও ড্যাশবোর্ডে রিডাইরেক্ট করে দিচ্ছি।
       window.location.href = '/dashboard'
     }
   }
@@ -35,7 +35,6 @@ export default function LoginPage() {
           </h2>
         </div>
         
-        {/* action এর বদলে onSubmit ব্যবহার করা হয়েছে */}
         <form className="mt-8 space-y-6" onSubmit={handleFormSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4 border border-red-200">
@@ -51,7 +50,7 @@ export default function LoginPage() {
               type="email"
               placeholder="you@example.com"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
           
@@ -63,7 +62,7 @@ export default function LoginPage() {
               type="password"
               placeholder="••••••••"
               required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
           
@@ -75,13 +74,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign up
-          </a>
-        </p>
       </div>
     </div>
   )
