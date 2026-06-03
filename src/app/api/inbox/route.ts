@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   }
 
   const apiKey = authHeader.replace('Bearer ', '').trim()
-  const supabase = createServiceClient()
+  const supabase = await createServiceClient()
 
   // Validate API key
   const { data: keyRow } = await supabase
@@ -35,22 +35,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  // Fetch emails
-  const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '20'), 100)
-  const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0')
-
-  const { data: emails, count } = await supabase
+  // Get user's temporary emails
+  const { data: emails } = await supabase
     .from('emails')
-    .select('id, from_address, subject, received_at', { count: 'exact' })
+    .select('*')
     .eq('to_address', profile.email_address)
     .order('received_at', { ascending: false })
-    .range(offset, offset + limit - 1)
 
-  return NextResponse.json({
-    address: profile.email_address,
-    total: count,
-    limit,
-    offset,
-    messages: emails || [],
-  })
+  return NextResponse.json(emails || [])
 }
