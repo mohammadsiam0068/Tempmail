@@ -20,8 +20,7 @@ export async function createClient() {
             )
           } catch (error) {
             // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // This can be ignored if you have middleware refreshing user sessions.
           }
         },
       },
@@ -29,7 +28,7 @@ export async function createClient() {
   )
 }
 
-// Service role client for admin actions (like deleting old emails)
+// Service role client for admin actions
 export async function createServiceClient() {
   const cookieStore = await cookies()
 
