@@ -11,13 +11,14 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     
-    // Server Action কল করা হচ্ছে
     const result = await loginAction(formData)
     
-    // যদি কোনো এরর আসে
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else if (result?.success) {
+      // লগিন সফল হলে জোর করে হার্ড-রিলোড দিয়ে ড্যাশবোর্ডে পাঠানো হবে
+      window.location.href = '/dashboard'
     }
   }
 
@@ -30,7 +31,6 @@ export default function LoginPage() {
           </h2>
         </div>
         
-        {/* onSubmit এর বদলে Next.js এর action ব্যবহার করা হয়েছে */}
         <form className="mt-8 space-y-6" action={handleFormSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4 border border-red-200">
@@ -39,28 +39,22 @@ export default function LoginPage() {
           )}
           
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
-            </label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
             <input
               id="email"
-              name="email" // name অ্যাট্রিবিউট যুক্ত করা হয়েছে
+              name="email"
               type="email"
-              placeholder="you@example.com"
               required
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             />
           </div>
           
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
             <input
               id="password"
-              name="password" // name অ্যাট্রিবিউট যুক্ত করা হয়েছে
+              name="password"
               type="password"
-              placeholder="Password (min 8 characters)"
               required
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             />
@@ -74,13 +68,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign up
-          </a>
-        </p>
       </div>
     </div>
   )
