@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -16,23 +15,43 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
+    console.log('🔐 Login attempt:', { email })
+
     try {
+      // Import createClient dynamically to avoid build-time errors
+      const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+
+      console.log('✅ Supabase client created')
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        setError(error.message)
+      console.log('📡 Auth response:', { data, error: authError })
+
+      if (authError) {
+        console.error('❌ Auth error:', authError)
+        setError(authError.message || 'Login failed')
         setLoading(false)
         return
       }
 
-      // Login successful - redirect to dashboard
-      router.push('/dashboard')
+      if (!data?.user) {
+        console.error('❌ No user data returned')
+        setError('Login failed: No user data')
+        setLoading(false)
+        return
+      }
+
+      console.log('✅ Login successful, redirecting to dashboard...')
+      
+      // Use window.location for more reliable redirect
+      window.location.href = '/dashboard'
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      console.error('❌ Exception during login:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred')
       setLoading(false)
     }
   }
@@ -47,26 +66,34 @@ export default function LoginPage() {
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-red-50 p-4 border border-red-200">
               <p className="text-sm font-medium text-red-800">{error}</p>
             </div>
           )}
           <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email address
+            </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email address"
+              placeholder="you@example.com"
               required
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             />
           </div>
           <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder="Password (min 8 characters)"
               required
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             />
@@ -74,11 +101,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+        <p className="text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            Sign up
+          </a>
+        </p>
       </div>
     </div>
   )
