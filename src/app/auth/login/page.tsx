@@ -47,8 +47,10 @@ export default function LoginPage() {
 
       console.log('✅ Login successful, redirecting to dashboard...')
       
-      // Use window.location for more reliable redirect
-      window.location.href = '/dashboard'
+      // window.location.href এর বদলে Next.js এর নিজস্ব router ব্যবহার করা হলো
+      router.push('/dashboard')
+      router.refresh() // সার্ভার কম্পোনেন্টগুলোকে নতুন লগিন স্টেট বোঝানোর জন্য এটি জরুরি
+
     } catch (err) {
       console.error('❌ Exception during login:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
