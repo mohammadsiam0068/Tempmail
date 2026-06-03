@@ -14,7 +14,8 @@ export function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        // cookiesToSet এর পাশে : any[] বসিয়ে টাইপ এররটি ফিক্স করা হলো
+        setAll(cookiesToSet: any[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
@@ -28,7 +29,7 @@ export function createClient() {
   )
 }
 
-// ২. সার্ভিস ক্লায়েন্ট (যেটি API রাউটগুলো ব্যবহার করে এবং বিল্ড ফেইল ঠেকাতে প্রয়োজন)
+// ২. সার্ভিস ক্লায়েন্ট (যেটি API রাউটগুলো ব্যবহার করে)
 export function createServiceClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
