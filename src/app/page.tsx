@@ -1,84 +1,19 @@
-'use client'
+import Link from 'next/link'
 
-import { useState, FormEvent } from 'react'
-import { loginAction } from '@/app/actions' 
-import { useRouter } from 'next/navigation'
-
-export default function LoginPage() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const router = useRouter()
-
-  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    
-    const formData = new FormData(e.currentTarget)
-    const result = await loginAction(formData)
-    
-    if (result?.error) {
-      setError(result.error)
-      setLoading(false)
-    } else if (result?.success) {
-      // ১. প্রথমে রাউটার রিফ্রেশ করে কুকি সিঙ্ক করে নেওয়া
-      router.refresh()
-      
-      // ২. সামান্য সময় পজ দিয়ে সরাসরি ড্যাশবোর্ডে হার্ড রিডাইরেক্ট করা
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 400)
-    }
-  }
-
+export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleFormSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4 border border-red-200">
-              <p className="text-sm font-medium text-red-800">{error}</p>
-            </div>
-          )}
-          
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              required
-              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
+      <h1 className="text-4xl font-bold mb-4">Welcome to Temporaries Email</h1>
+      <p className="text-gray-400 mb-8 text-center max-w-md">
+        Create temporary disposable email inboxes instantly to protect your privacy.
+      </p>
+      <div className="space-x-4">
+        <Link href="/auth/login" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition">
+          Go to Login
+        </Link>
+        <Link href="/dashboard" className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition">
+          Dashboard
+        </Link>
       </div>
     </div>
   )
