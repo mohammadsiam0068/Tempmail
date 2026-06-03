@@ -30,7 +30,26 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    await supabase.auth.getUser()
+    // ইউজারের ডাটা ফেচ করা হচ্ছে
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // বর্তমান ইউআরএল পাথ (যেমন: /dashboard বা /login)
+    const currentPath = request.nextUrl.pathname
+
+    // ১. যদি ইউজার লগিন করা না থাকে এবং ড্যাশবোর্ডে ঢোকার চেষ্টা করে
+    if (!user && currentPath.startsWith('/dashboard')) {
+      const url = request.nextUrl.clone()
+      // আপনার লগিন পেজের লিংক যদি /auth/login হয়, তবে নিচে সেটি দিন
+      url.pathname = '/' 
+      return NextResponse.redirect(url)
+    }
+
+    // ২. যদি ইউজার লগিন করা থাকে এবং আবার লগিন বা সাইনআপ পেজে যাওয়ার চেষ্টা করে
+    if (user && (currentPath === '/' || currentPath.startsWith('/auth'))) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
 
     return supabaseResponse
   } catch (error) {
