@@ -1,23 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import { loginAction } from './actions'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleFormSubmit = async (formData: FormData) => {
+  // FormEvent যুক্ত করা হয়েছে এবং e.preventDefault() দেওয়া হয়েছে
+  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault() // এটি ব্রাউজারকে পেজ রিলোড করা থেকে ১০০% আটকে দেবে!
     setLoading(true)
     setError('')
     
+    // ফর্মের ডাটা ম্যানুয়ালি তৈরি করে সার্ভার অ্যাকশনে পাঠানো হচ্ছে
+    const formData = new FormData(e.currentTarget)
     const result = await loginAction(formData)
     
     if (result?.error) {
       setError(result.error)
       setLoading(false)
     } else if (result?.success) {
-      // লগিন সফল হলে জোর করে হার্ড-রিলোড দিয়ে ড্যাশবোর্ডে পাঠানো হবে
+      // লগিন সফল হলে ব্রাউজারকে ড্যাশবোর্ডে পাঠানো হবে
       window.location.href = '/dashboard'
     }
   }
@@ -31,7 +35,8 @@ export default function LoginPage() {
           </h2>
         </div>
         
-        <form className="mt-8 space-y-6" action={handleFormSubmit}>
+        {/* action এর বদলে onSubmit ব্যবহার করা হয়েছে */}
+        <form className="mt-8 space-y-6" onSubmit={handleFormSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4 border border-red-200">
               <p className="text-sm font-medium text-red-800">{error}</p>
@@ -44,6 +49,7 @@ export default function LoginPage() {
               id="email"
               name="email"
               type="email"
+              placeholder="you@example.com"
               required
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             />
@@ -55,6 +61,7 @@ export default function LoginPage() {
               id="password"
               name="password"
               type="password"
+              placeholder="••••••••"
               required
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             />
@@ -68,6 +75,13 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+        
+        <p className="text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <a href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            Sign up
+          </a>
+        </p>
       </div>
     </div>
   )
