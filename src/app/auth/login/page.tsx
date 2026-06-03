@@ -1,25 +1,42 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-// File path অনুযায়ী action import করুন। যদি actions.ts রুট app ফোল্ডারে থাকে তবে নিচেরটা ঠিক আছে।
-import { loginAction } from '@/app/actions' 
+import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
+
+  // ব্রাউজার ক্লায়েন্ট তৈরি করা (এটি নিজে থেকেই কুকি সেভ করবে)
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault() // পেজ রিলোড হওয়া বন্ধ করবে
+    e.preventDefault()
     setLoading(true)
     setError('')
     
     const formData = new FormData(e.currentTarget)
-    const result = await loginAction(formData)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
     
-    // যদি Server Action থেকে কোনো এরর আসে (যেমন: ভুল পাসওয়ার্ড)
-    if (result?.error) {
-      setError(result.error)
+    // সরাসরি ব্রাউজার থেকে লগিন রিকোয়েস্ট
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
+    if (error) {
+      setError(error.message)
       setLoading(false)
+    } else {
+      // লগিন সফল হলে Next.js-কে আপডেট করে ড্যাশবোর্ডে পাঠিয়ে দেবে
+      router.refresh()
+      router.push('/dashboard')
     }
   }
 
