@@ -18,12 +18,12 @@ export default function LoginPage() {
     console.log('🔐 Login attempt:', { email })
 
     try {
-      // Import createClient dynamically to avoid build-time errors
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
 
       console.log('✅ Supabase client created')
 
+      // ১. লগিন রিকোয়েস্ট পাঠানো হচ্ছে
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -45,16 +45,26 @@ export default function LoginPage() {
         return
       }
 
-      console.log('✅ Login successful, redirecting to dashboard...')
+      // ২. সেশনটি ব্রাউজারের মেমোরি ও কুকিতে সেট হতে বাধ্য করা হচ্ছে
+      const { data: { session } } = await supabase.auth.getSession()
       
-      // ১. প্রথমে রাউটার রিফ্রেশ করুন যাতে ব্রাউজার সেশন কুকি আপডেট করে নেয়
+      if (!session) {
+        console.error('❌ Session not established yet')
+        setError('Session creation failed. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      console.log('✅ Session confirmed, refreshing and redirecting...')
+      
+      // ৩. রাউটার রিফ্রেশ করে ১ সেকেন্ড অপেক্ষা করা হচ্ছে যাতে Middleware কুকিটি পায়
       router.refresh()
       
-      // ২. ৫০০ মিলিসেকেন্ড (০.৫ সেকেন্ড) অপেক্ষা করে ড্যাশবোর্ডে পুশ করুন
-      // এতে মিডলওয়্যার (Middleware) সঠিকভাবে কুকি রিড করতে পারবে
       setTimeout(() => {
-        router.push('/dashboard')
-      }, 500)
+        // window.location.replace ব্যবহার করলে ব্রাউজার জোরপূর্বক সার্ভার রিফ্রেশসহ ড্যাশবোর্ডে যাবে
+        // এতে মিডলওয়্যার কোনোভাবেই পুরানো ক্যাশ বা কুকি দেখাবে না
+        window.location.replace('/dashboard')
+      }, 1000)
 
     } catch (err) {
       console.error('❌ Exception during login:', err)
