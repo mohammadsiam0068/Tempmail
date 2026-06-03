@@ -3,9 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request,
   })
 
   const supabase = createServerClient(
@@ -19,11 +17,9 @@ export async function middleware(request: NextRequest) {
         // @ts-ignore
         setAll(cookiesToSet) {
           // @ts-ignore
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request,
           })
           // @ts-ignore
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -34,16 +30,22 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  // ইউজার না থাকলে এবং ড্যাশবোর্ডে যাওয়ার চেষ্টা করলে লগিনে ফেরত পাঠাবে
+  // ইউজার যদি লগিন করা না থাকে এবং ড্যাশবোর্ডে যাওয়ার চেষ্টা করে
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/login'
+    return NextResponse.redirect(url) // Vercel-এর জন্য নিরাপদ রিডাইরেক্ট
   }
 
-  // ইউজার লগিন করা থাকলে এবং লগিন পেজে যাওয়ার চেষ্টা করলে ড্যাশবোর্ডে পাঠাবে
+  // ইউজার যদি অলরেডি লগিন করা থাকে এবং লগিন পেজে আসার চেষ্টা করে
   if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
