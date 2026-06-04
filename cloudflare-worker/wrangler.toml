@@ -1,0 +1,10 @@
+name = "email-receiver"
+main = "email-receiver.js"
+compatibility_date = "2024-01-01"
+
+# Environment Variables (Secrets)
+[env.production]
+vars = { SUPABASE_URL = "https://zagkmetvbbjwfeuekhfe.supabase.co" }
+
+[env.production.secrets]
+SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZ2ttZXR2YmJqd2ZldWVraGZlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDM5NjU0MywiZXhwIjoyMDk1OTcyNTQzfQ.5s_Ul0aIvbprq27nsg4C_AjY-lylgKvvLGD4zChoAtw"
