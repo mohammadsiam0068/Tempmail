@@ -1,170 +1,168 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function SignupPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+function generateEmailAddress() {
+  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 10; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length))
+  }
+  return `${result}@temporaries.email`
+}
+
+export default function DashboardLayout({ 
+  children 
+}: { 
+  children: React.ReactNode 
+}) {
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setLoading(false)
-      return
+        if (!user) {
+          router.push('/auth/login')
+          return
+        }
+
+        setUser(user)
+
+        // Get profile
+        let { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        // If profile doesn't exist, create one
+        if (!profileData) {
+          const emailAddress = generateEmailAddress()
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: user.id,
+                email_address: emailAddress,
+              }
+            ])
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error('Error creating profile:', insertError)
+          } else {
+            profileData = newProfile
+          }
+        }
+
+        if (profileData) {
+          setProfile(profileData)
+        }
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Auth check error:', error)
+        router.push('/auth/login')
+      }
     }
 
-    // Validate password length
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      setLoading(false)
-      return
-    }
+    checkAuth()
+  }, [router])
 
+  const handleLogout = async () => {
     try {
       const supabase = createClient()
-      const { error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-
-      if (signupError) {
-        setError(signupError.message)
-        setLoading(false)
-        return
-      }
-
-      setSuccess(true)
-      setEmail('')
-      setPassword('')
-      setConfirmPassword('')
-
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 2000)
-    } catch (err) {
-      setError('Signup failed. Please try again.')
-      setLoading(false)
+      await supabase.auth.signOut()
+      router.push('/auth/login')
+    } catch (error) {
+      console.error('Logout error:', error)
     }
   }
 
-  if (success) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">
-              Account Created!
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Your account has been created successfully. Check your email to verify your account.
-            </p>
-            <p className="text-sm text-gray-500">
-              Redirecting to login page...
-            </p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     )
   }
 
+  if (!user) {
+    return null
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create an account
-          </h2>
-        </div>
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm font-medium text-red-800">{error}</p>
-            </div>
-          )}
-
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password (min 8 characters)"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="sr-only">
-                Confirm Password
-              </label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm password"
-              />
-            </div>
-          </div>
-
-          <div>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">temporaries.email</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-gray-600 text-sm">{user?.email}</span>
             <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700 font-medium"
             >
-              {loading ? 'Creating account...' : 'Sign up'}
+              logout
             </button>
           </div>
+        </div>
+      </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <a href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
-                Sign in
-              </a>
-            </p>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Sidebar */}
+          <div className="md:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold">YOUR ADDRESS</p>
+                <p className="text-lg font-mono font-bold text-gray-900 mt-2 break-all">
+                  {profile?.email_address || 'Loading...'}
+                </p>
+                <button 
+                  onClick={() => {
+                    if (profile?.email_address) {
+                      navigator.clipboard.writeText(profile.email_address)
+                    }
+                  }}
+                  className="text-orange-600 text-sm mt-3 hover:text-orange-700 font-medium"
+                >
+                  📋 copy address
+                </button>
+              </div>
+
+              <nav className="space-y-1 border-t pt-4">
+                <div className="bg-black text-white px-4 py-3 rounded cursor-pointer font-medium">
+                  📥 Inbox
+                </div>
+                <div className="text-gray-700 px-4 py-3 rounded cursor-pointer hover:bg-gray-100 font-medium">
+                  🔑 API Keys
+                </div>
+                <div className="text-gray-700 px-4 py-3 rounded cursor-pointer hover:bg-gray-100 font-medium">
+                  📖 API Docs
+                </div>
+              </nav>
+            </div>
           </div>
-        </form>
+
+          {/* Content Area */}
+          <div className="md:col-span-2">
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   )
