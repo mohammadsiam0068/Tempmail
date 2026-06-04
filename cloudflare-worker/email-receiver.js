@@ -1,57 +1,83 @@
+import { PostalMime } from 'postal-mime'
+
 /**
  * Cloudflare Email Worker
- * Deploy this separately at: Cloudflare Dashboard → Workers & Pages
- *
- * Environment variables needed:
- *   SUPABASE_URL       → your Supabase project URL
- *   SUPABASE_SERVICE_KEY → your Supabase service_role key
+ * Receives emails and stores them in Supabase
+ * 
+ * Environment variables:
+ *   SUPABASE_URL
+ *   SUPABASE_SERVICE_KEY
  */
 
 export default {
   async email(message, env, ctx) {
-    const to = message.to
-    const from = message.from
+    try {
+      const to = message.to
+      const from = message.from
+      
+      // Parse the raw email
+      const rawEmail = await message.raw.text()
+      
+      // Use postal-mime for proper parsing
+      let subject = '(No Subject)'
+      let body = ''
+      let htmlBody = null
+      
+      try {
+        const email = await PostalMime.parse(rawEmail)
+        subject = email.subject || '(No Subject)'
+        body = email.text || ''
+        htmlBody = email.html || null
+      } catch (parseError) {
+        console.log('PostalMime parse failed, using fallback:', parseError)
+        
+        // Fallback parsing
+        const subjectMatch = rawEmail.match(/^Subject: (.+?)(\r\n|$)/m)
+        subject = subjectMatch ? subjectMatch[1].trim() : '(No Subject)'
+        
+        const bodyMatch = rawEmail.match(/\r\n\r\n([\s\S]*)/m)
+        body = bodyMatch ? bodyMatch[1].substring(0, 10000) : ''
+      }
 
-    // Read raw email content
-    const rawEmail = await new Response(message.raw).text()
+      // Insert into Supabase
+      const insertRes = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/emails`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': env.SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            to_address: to,
+            from_address: from,
+            subject: subject.substring(0, 255),
+            body: body.substring(0, 50000),
+            html_body: htmlBody ? htmlBody.substring(0, 50000) : null,
+            received_at: new Date().toISOString(),
+          }),
+        }
+      )
 
-    // Parse subject
-    const subjectMatch = rawEmail.match(/^Subject: (.+)$/mi)
-    const subject = subjectMatch ? subjectMatch[1].trim() : '(No Subject)'
+      if (!insertRes.ok) {
+        const errorText = await insertRes.text()
+        console.error(
+          `Supabase error [${insertRes.status}]:`,
+          errorText
+        )
+        
+        // Still return success to Cloudflare (don't bounce the email)
+        return new Response('OK', { status: 200 })
+      }
 
-    // Parse body (simple split on double newline)
-    const headerBodySplit = rawEmail.indexOf('\r\n\r\n')
-    const rawBody = headerBodySplit !== -1 ? rawEmail.substring(headerBodySplit + 4) : rawEmail
-    const body = rawBody.substring(0, 10000)
-
-    // Try to extract HTML part
-    let htmlBody = null
-    const htmlMatch = rawEmail.match(/Content-Type: text\/html[^\r\n]*\r\n(?:[^\r\n]+\r\n)*\r\n([\s\S]+?)(?:--|\z)/i)
-    if (htmlMatch) {
-      htmlBody = htmlMatch[1].trim().substring(0, 50000)
-    }
-
-    // Insert into Supabase
-    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/emails`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': env.SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({
-        to_address: to,
-        from_address: from,
-        subject,
-        body,
-        html_body: htmlBody,
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      console.error('Supabase insert error:', err)
+      console.log(`Email received: ${from} → ${to}`)
+      return new Response('OK', { status: 200 })
+      
+    } catch (error) {
+      console.error('Worker error:', error.message)
+      return new Response('Error processing email', { status: 500 })
     }
   },
 }
