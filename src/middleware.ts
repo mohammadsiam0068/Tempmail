@@ -2,59 +2,45 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  try {
+    let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        // @ts-ignore
-        setAll(cookiesToSet) {
-          // @ts-ignore
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          // @ts-ignore
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return supabaseResponse
     }
-  )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: any[]) {
+            try {
+              cookiesToSet.forEach(({ name, value }) =>
+                request.cookies.set(name, value)
+              )
+              supabaseResponse = NextResponse.next({ request })
+              cookiesToSet.forEach(({ name, value, options }) =>
+                supabaseResponse.cookies.set(name, value, options)
+              )
+            } catch (error) {
+              // Ignore cookie errors
+            }
+          },
+        },
+      }
+    )
 
-  // ইউজার না থাকলে এবং ড্যাশবোর্ডে যাওয়ার চেষ্টা করলে
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    // URL-এর শেষে একটি এরর মেসেজ যোগ করে দিলাম চেনার জন্য
-    url.searchParams.set('error', 'middleware_kicked_me')
-    return NextResponse.redirect(url)
+    await supabase.auth.getUser()
+    return supabaseResponse
+  } catch (error) {
+    return NextResponse.next({ request })
   }
-
-  // ইউজার থাকলে এবং লগিন পেজে যাওয়ার চেষ্টা করলে
-  if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
