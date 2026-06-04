@@ -36,7 +36,7 @@ export default {
         subject = subjectMatch ? subjectMatch[1].trim() : '(No Subject)'
         
         const bodyMatch = rawEmail.match(/\r\n\r\n([\s\S]*)/m)
-        body = bodyMatch ? bodyMatch[1].substring(0, 10000) : ''
+        body = bodyMatch ? bodyMatch[1].substring(0, 100000) : ''
       }
 
       // Insert into Supabase
